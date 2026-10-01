@@ -27,7 +27,7 @@ export default function AuthPanel() {
   const name = (user.user_metadata.full_name as string | undefined) ?? user.email;
 
   return (
-    <div className="flex h-9 items-center justify-between gap-3 text-sm">
+    <div className="flex min-h-9 items-center justify-between gap-3 border border-zinc-900 px-3 py-2 text-sm dark:border-white">
       <div className="flex min-w-0 flex-col leading-tight">
         <span className="truncate font-semibold">{name}</span>
         {name !== user.email && <span className="truncate text-xs text-zinc-500">{user.email}</span>}
