@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState, useSyncExternalStore } from "react";
+import AuthPanel from "@/components/AuthPanel";
 import EventForm from "@/components/EventForm";
 import Footer from "@/components/Footer";
 import { WEEKDAYS, formatDateLabel, fromKey, getMonthGrid, toKey } from "@/lib/date";
@@ -254,7 +255,11 @@ function CalendarView() {
         </ul>
 
         {/* 사이드바 하단 푸터 */}
-        <Footer title="Grandma's Calendar" />
+        {/* 사이드바 하단: 로그인 + 푸터 */}
+        <div className="mt-auto flex flex-col gap-4">
+          <AuthPanel />
+          <Footer title="Grandma's Calendar" />
+        </div>
       </aside>
     </div>
   );
