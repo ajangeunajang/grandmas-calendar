@@ -8,9 +8,30 @@ const plexMono = IBM_Plex_Mono({
   weight: ["300", "400", "500", "600", "700"],
 });
 
+const SITE_URL = "https://grandmas-calendar-2026.vercel.app/";
+const TITLE = "Grandma's Calendar";
+const DESCRIPTION = "할머니 달력";
+
 export const metadata: Metadata = {
-  title: "Grandma's Calendar",
-  description: "Next.js + Tailwind 캘린더",
+  metadataBase: new URL(SITE_URL),
+  title: TITLE,
+  description: DESCRIPTION,
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    url: SITE_URL,
+    siteName: TITLE,
+    title: TITLE,
+    description: DESCRIPTION,
+    locale: "ko_KR",
+    images: [{ url: "/og.jpg", width: 1201, height: 631, alt: TITLE }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: TITLE,
+    description: DESCRIPTION,
+    images: ["/og.jpg"],
+  },
   // 모바일에서 메일 주소·전화번호·주소 자동 링크(밑줄) 방지
   formatDetection: { email: false, telephone: false, address: false },
 };
