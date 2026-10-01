@@ -11,14 +11,15 @@ export interface CalendarEvent {
   title: string;
   time?: string; // HH:mm
   color: EventColor;
+  done?: boolean;
 }
 
-export const COLOR_STYLES: Record<EventColor, { dot: string; chip: string }> = {
-  blue: { dot: "bg-blue-500", chip: "bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-200" },
-  green: { dot: "bg-green-500", chip: "bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-200" },
-  red: { dot: "bg-red-500", chip: "bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-200" },
-  yellow: { dot: "bg-yellow-400", chip: "bg-yellow-100 text-yellow-800 dark:bg-yellow-500/20 dark:text-yellow-200" },
-  purple: { dot: "bg-purple-500", chip: "bg-purple-100 text-purple-800 dark:bg-purple-500/20 dark:text-purple-200" },
+export const COLOR_STYLES: Record<EventColor, { dot: string; border: string }> = {
+  blue: { dot: "bg-blue-500", border: "border-blue-500" },
+  green: { dot: "bg-green-500", border: "border-green-500" },
+  red: { dot: "bg-red-500", border: "border-red-500" },
+  yellow: { dot: "bg-yellow-400", border: "border-yellow-400" },
+  purple: { dot: "bg-purple-500", border: "border-purple-500" },
 };
 
 const STORAGE_KEY = "eunas-calendar:events";
@@ -45,6 +46,7 @@ interface EventRow {
   title: string;
   time: string | null;
   color: EventColor;
+  done: boolean;
 }
 
 const toRow = (e: CalendarEvent, userId: string): EventRow => ({
@@ -54,6 +56,7 @@ const toRow = (e: CalendarEvent, userId: string): EventRow => ({
   title: e.title,
   time: e.time ?? null,
   color: e.color,
+  done: e.done ?? false,
 });
 
 const fromRow = (r: EventRow): CalendarEvent => ({
@@ -62,6 +65,7 @@ const fromRow = (r: EventRow): CalendarEvent => ({
   title: r.title,
   time: r.time ?? undefined,
   color: r.color,
+  done: r.done ?? false,
 });
 
 function readLocal(): CalendarEvent[] {
@@ -103,7 +107,7 @@ async function loadRemote(userId: string) {
     else console.error("일정 옮기기 실패", error);
   }
 
-  const { data, error } = await sb.from("events").select("id, user_id, date, title, time, color");
+  const { data, error } = await sb.from("events").select("*");
   if (error) return console.error("일정 불러오기 실패", error);
   // 불러오는 사이 로그아웃·계정 변경이 있었다면 무시
   if (mode.kind === "remote" && mode.userId === userId) setCache((data as EventRow[]).map(fromRow));
@@ -171,6 +175,13 @@ export function useEvents() {
         current().map((e) => (e.id === event.id ? event : e)),
         (sb, userId) => sb.from("events").update(toRow(event, userId)).eq("id", event.id),
       ),
+    toggleDone: (event: CalendarEvent) => {
+      const next = { ...event, done: !event.done };
+      mutate(
+        current().map((e) => (e.id === event.id ? next : e)),
+        (sb) => sb.from("events").update({ done: next.done }).eq("id", event.id),
+      );
+    },
     deleteEvent: (id: string) =>
       mutate(
         current().filter((e) => e.id !== id),
@@ -179,7 +190,7 @@ export function useEvents() {
   };
 }
 
-/** 시간 없는 일정 먼저, 그 다음 시간순 */
+/** 시간 없는 일정 먼저, 그 다음 시간순 (완료 여부와 상관없이 순서 고정) */
 export function sortEvents(events: CalendarEvent[]): CalendarEvent[] {
   return [...events].sort((a, b) => (a.time ?? "").localeCompare(b.time ?? ""));
 }

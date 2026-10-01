@@ -8,8 +8,12 @@ create table if not exists public.events (
   title text not null,
   time text,
   color text not null default 'blue',
+  done boolean not null default false,
   created_at timestamptz not null default now()
 );
+
+-- 이미 테이블을 만든 경우: 완료 체크용 칸 추가
+alter table public.events add column if not exists done boolean not null default false;
 
 create index if not exists events_user_date_idx on public.events (user_id, date);
 

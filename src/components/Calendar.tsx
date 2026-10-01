@@ -38,7 +38,7 @@ function CalendarView() {
   const [leaving, setLeaving] = useState<{ index: number; dir: 1 | -1 } | null>(null);
   const [selected, setSelected] = useState(todayKey);
   const [editing, setEditing] = useState<CalendarEvent | "new" | null>(null);
-  const { events, addEvent, updateEvent, deleteEvent } = useEvents();
+  const { events, addEvent, updateEvent, toggleDone, deleteEvent } = useEvents();
   const wheel = useRef({ acc: 0, locked: false, movedAt: 0, lastEvent: 0 });
 
   const year = Math.floor(current / 12);
@@ -193,68 +193,84 @@ function CalendarView() {
 
       {/* 선택한 날짜 상세 */}
       <aside className="flex w-full flex-col gap-4 md:w-80">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold tabular-nums">{formatDateLabel(fromKey(selected))}</h2>
-          {editing === null && (
-            <button
-              onClick={() => setEditing("new")}
-              aria-label="일정 추가"
-              className="bg-zinc-900 px-3 py-1.5 text-sm text-white hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
-            >
-              +
-            </button>
-          )}
-        </div>
-
-        {editing === "new" && (
-          <EventForm
-            onCancel={() => setEditing(null)}
-            onSubmit={(data) => {
-              addEvent({ ...data, date: selected });
-              setEditing(null);
-            }}
-          />
-        )}
-
-        <ul className="flex flex-col gap-2">
-          {selectedEvents.length === 0 && editing !== "new" && (
-            <li className="text-sm text-zinc-500">일정이 없어요. 날짜를 더블클릭해도 추가할 수 있어요.</li>
-          )}
-          {selectedEvents.map((e) =>
-            editing !== "new" && editing?.id === e.id ? (
-              <li key={e.id}>
-                <EventForm
-                  initial={e}
-                  onCancel={() => setEditing(null)}
-                  onSubmit={(data) => {
-                    updateEvent({ ...e, ...data });
-                    setEditing(null);
-                  }}
-                />
-              </li>
-            ) : (
-              <li
-                key={e.id}
-                className="group flex items-center gap-3 rounded-xl border border-zinc-200 px-3 py-2.5 dark:border-zinc-800"
+        {/* 선택한 날짜 + 일정 목록 — 아주 연한 회색 박스 */}
+        <section className="flex flex-col gap-4 bg-zinc-50 p-4 md:min-h-80 dark:bg-zinc-900">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold tabular-nums">{formatDateLabel(fromKey(selected))}</h2>
+            {editing === null && (
+              <button
+                onClick={() => setEditing("new")}
+                aria-label="일정 추가"
+                className="bg-zinc-900 px-3 py-1.5 text-sm text-white hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
               >
-                <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${COLOR_STYLES[e.color].dot}`} />
-                <button onClick={() => setEditing(e)} className="flex flex-1 flex-col text-left">
-                  <span className="text-sm font-medium">{e.title}</span>
-                  <span className="text-xs text-zinc-500">{e.time ?? "하루 종일"}</span>
-                </button>
-                <button
-                  onClick={() => deleteEvent(e.id)}
-                  aria-label="삭제"
-                  className="text-zinc-400 opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100"
-                >
-                  ✕
-                </button>
-              </li>
-            ),
-          )}
-        </ul>
+                +
+              </button>
+            )}
+          </div>
 
-        {/* 사이드바 하단 푸터 */}
+          {editing === "new" && (
+            <EventForm
+              onCancel={() => setEditing(null)}
+              onSubmit={(data) => {
+                addEvent({ ...data, date: selected });
+                setEditing(null);
+              }}
+            />
+          )}
+
+          <ul className="flex flex-col gap-2">
+            {selectedEvents.length === 0 && editing !== "new" && (
+              <li className="text-sm text-zinc-500">일정이 없어요. 날짜를 더블클릭해도 추가할 수 있어요.</li>
+            )}
+            {selectedEvents.map((e) =>
+              editing !== "new" && editing?.id === e.id ? (
+                <li key={e.id}>
+                  <EventForm
+                    initial={e}
+                    onCancel={() => setEditing(null)}
+                    onSubmit={(data) => {
+                      updateEvent({ ...e, ...data });
+                      setEditing(null);
+                    }}
+                  />
+                </li>
+              ) : (
+                <li
+                  key={e.id}
+                  className="group flex items-start gap-3 py-1.5"
+                >
+                  {/* 완료 체크 — 일정 색 네모, 완료하면 채워지고 ✓ */}
+                  <button
+                    role="checkbox"
+                    aria-checked={e.done ?? false}
+                    aria-label={`${e.title} 완료`}
+                    onClick={() => toggleDone(e)}
+                    className={`mt-[3px] flex size-3.5 shrink-0 items-center justify-center border-[1.5px] text-[10px] leading-none text-white ${
+                      COLOR_STYLES[e.color].border
+                    } ${e.done ? COLOR_STYLES[e.color].dot : ""}`}
+                  >
+                    {e.done && <span className="font-symbol">✓</span>}
+                  </button>
+                  <button
+                    onClick={() => setEditing(e)}
+                    className={`flex flex-1 flex-col text-left ${e.done ? "text-zinc-400 dark:text-zinc-600" : ""}`}
+                  >
+                    <span className={`text-sm font-medium ${e.done ? "line-through" : ""}`}>{e.title}</span>
+                    <span className="text-xs text-zinc-500">{e.time ?? "하루 종일"}</span>
+                  </button>
+                  <button
+                    onClick={() => deleteEvent(e.id)}
+                    aria-label="삭제"
+                    className="text-zinc-400 opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100"
+                  >
+                    ✕
+                  </button>
+                </li>
+              ),
+            )}
+          </ul>
+        </section>
+
         {/* 사이드바 하단: 로그인 + 푸터 */}
         <div className="mt-auto flex flex-col gap-4">
           <AuthPanel />
@@ -336,12 +352,17 @@ function MonthGrid({ index, eventsByDate, selected, todayKey, onSelect, onAdd, c
                 <span className="absolute top-0 -right-[0.25em] size-[calc(clamp(2.75rem,6.5vw,6.5rem)*0.14)] rounded-full bg-red-500" />
               )}
             </span>
-            {/* 일정이 있는 날 — 칸 아래쪽을 가로지르는 파란 선 */}
+            {/* 일정이 있는 날 — 칸 아래쪽 선. 일정마다 한 칸씩, 각 일정 색으로 (완료한 일은 연하게) */}
             {dayEvents.length > 0 && (
-              <span
-                title={dayEvents.map((e) => e.title).join(", ")}
-                className="absolute inset-x-2 bottom-2 h-1 bg-blue-500"
-              />
+              <span className="absolute inset-x-2 bottom-2 flex h-1 gap-0.5">
+                {dayEvents.map((e) => (
+                  <span
+                    key={e.id}
+                    title={e.title}
+                    className={`flex-1 ${COLOR_STYLES[e.color].dot} ${e.done ? "opacity-25" : ""}`}
+                  />
+                ))}
+              </span>
             )}
           </button>
         );
